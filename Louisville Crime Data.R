@@ -32,8 +32,68 @@ crime_raw$block_address <- tolower(crime_raw$block_address)
 crime_raw$city <- tolower(crime_raw$city)
 crime_raw$uor_desc <- tolower(crime_raw$uor_desc)
 
+crime_raw$block_address <- as.factor(crime_raw$block_address)
+crime_raw$zip_code <- as.factor(crime_raw$zip_code)
 #trimming trailing whitespace
 crime_raw$block_address <- gsub("\\s+$", "", crime_raw$block_address)
+
+
+
+#------------------------------------------------------------------------------
+# Working out geocoding issue
+# These are the zip_codes we are identifying as louisvile.
+# Debatable list, but we will stick with it
+lou_zip <- c(40056, 40118, 40201, 40202, 40203, 40204, 40205, 40206,
+             40207, 40208, 40209, 40210, 40211, 40212, 40213, 40214, 
+             40215, 40216, 40217, 40218, 40219, 40220, 40221, 40222, 
+             40223, 40224, 40225, 40228, 40229, 40231, 40232, 40233, 
+             40241, 40242, 40243, 40245, 40250, 40251, 40252, 40253,
+             40255, 40256, 40257, 40258, 40259, 40261, 40266, 40268, 
+             40269, 40270, 40272, 40280, 40281, 40282, 40283, 40285, 
+             40287, 40289, 40290, 40291, 40292, 40293, 40294, 40295,
+             40296, 40297, 40298, 40299)
+lou_zip <- as.factor(lou_zip)
+
+# List of Louisville spellings occuring in raw data set
+# Will scan for these and then replace with 'louisville'
+lou_city <- c("lou", "louisivlle", "louisv", "louisviille", "louisvile", "louisville",
+              "lousville", "lvil")
+
+
+# Cleaning up zip_code and city
+crime_lou <- crime_raw %>%
+  filter(zip_code %in% lou_zip == TRUE, city %in% lou_city == TRUE)
+
+
+# block_address is poorly formatted for lat/lng coords. 'block' throws errors 
+# depending on the service as does the '/' for street intersections
+
+# How many rows contain an address with the format '/'?
+sum(grepl("/", crime_lou$block_address))/nrow(crime_lou) # so 15.9% of data has 
+                                                         # and address of this form
+# How many contain 'block"? The rest?
+sum(grepl("block", crime_lou$block_address))/ nrow(crime_lou) #78.5%
+
+#What are the other bits?
+no_block_address <- crime_lou%>%
+  filter(grepl("/", crime_lou$block_address) == FALSE,
+         grepl("block", crime_lou$block_address) == FALSE)
+# These seem to be general 'zone' listings. Testing them out, some are geocodable,
+# some are not ???
+
+#After cleaning this would still yield ~35000 addresses to code. What if we get 
+# rid of rows with 'other' nibrs codes ('000' and '999'). There is nothing immediately
+# obvious I can do about those
+
+crime_lou <- crime_raw %>%
+  filter(!(nibrs_code == "000" | nibrs_code == "999"), zip_code %in% lou_zip == TRUE,
+         city %in% lou_city == TRUE)
+
+# Now if we look unique addresses
+block_address <- crime_lou%>%
+  filter(grepl("/", crime_lou$block_address) == TRUE | grepl("block", crime_lou$block_address) == TRUE)
+
+
 
 
 #How many incidents by zip code regardless of date
@@ -57,8 +117,3 @@ crime_map <- ggmap(louisville,
 
 
 
-
-###Houston test example
-str(crime)
-qmap('houston', zoom = 13)
-gglocator(2)
