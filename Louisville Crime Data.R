@@ -153,3 +153,6 @@ unique_addresses <- data.frame(unique(to_geocode_df$full_address))
 names(unique_addresses) <- "addresses"
 write.csv(unique_addresses, "unique_addresses.csv")
 
+#Writing the cleaned up full data frame to csv as well
+write.csv(to_geocode_df, "clean_louisville_crime.csv")
+
