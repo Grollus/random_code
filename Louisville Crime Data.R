@@ -8,18 +8,6 @@ crime_raw <- fread("Crime_Data_All.csv", stringsAsFactors = FALSE,
                    data.table = FALSE)
 assaulted_officers_raw <- fread("AssaultedOfficerData.csv", stringsAsFactors = FALSE,
                                 data.table = FALSE)
-#column convertions
-crime_raw$DATE_REPORTED <- as.POSIXct(crime_raw$DATE_REPORTED, format = "%Y-%m-%d %H:%M:%S")
-crime_raw$DATE_OCCURED <- as.POSIXct(crime_raw$DATE_OCCURED, format = "%Y-%m-%d %H:%M:%S")
-crime_raw$CRIME_TYPE <- as.factor(crime_raw$CRIME_TYPE)
-crime_raw$NIBRS_CODE <- as.factor(crime_raw$NIBRS_CODE)
-crime_raw$UCR_HIERARCHY <- as.factor(crime_raw$UCR_HIERARCHY)
-crime_raw$ATT_COMP <- as.factor(crime_raw$ATT_COMP)
-crime_raw$LMPD_DIVISION <- as.factor(crime_raw$LMPD_DIVISION)
-crime_raw$LMPD_BEAT <- as.factor(crime_raw$LMPD_BEAT)
-crime_raw$PREMISE_TYPE <- as.factor(crime_raw$PREMISE_TYPE)
-
-crime_raw$UOR_DESC <- as.factor(crime_raw$UOR_DESC)
 
 #tidying up formatting
 names(crime_raw) <- tolower(names(crime_raw))
@@ -32,8 +20,22 @@ crime_raw$block_address <- tolower(crime_raw$block_address)
 crime_raw$city <- tolower(crime_raw$city)
 crime_raw$uor_desc <- tolower(crime_raw$uor_desc)
 
+
+#column convertions
+crime_raw$date_reported <- as.POSIXct(crime_raw$date_reported, format = "%Y-%m-%d %H:%M:%S")
+crime_raw$date_occured <- as.POSIXct(crime_raw$date_occured, format = "%Y-%m-%d %H:%M:%S")
+crime_raw$crime_type <- as.factor(crime_raw$crime_type)
+crime_raw$nibrs_code <- as.factor(crime_raw$nibrs_code)
+crime_raw$ucr_hierarchy <- as.factor(crime_raw$ucr_hierarchy)
+crime_raw$att_comp <- as.factor(crime_raw$att_comp)
+crime_raw$lmpd_division <- as.factor(crime_raw$lmpd_division)
+crime_raw$lmpd_beat <- as.factor(crime_raw$lmpd_beat)
+crime_raw$premise_type <- as.factor(crime_raw$premise_type)
+crime_raw$uor_desc <- as.factor(crime_raw$uor_desc)
 crime_raw$block_address <- as.factor(crime_raw$block_address)
 crime_raw$zip_code <- as.factor(crime_raw$zip_code)
+
+
 #trimming trailing whitespace
 crime_raw$block_address <- gsub("\\s+$", "", crime_raw$block_address)
 
@@ -65,12 +67,14 @@ crime_lou <- crime_raw %>%
   filter(zip_code %in% lou_zip == TRUE, city %in% lou_city == TRUE)
 
 
-# block_address is poorly formatted for lat/lng coords. 'block' throws errors 
+# block_address is poorly formatted for lat/lng geocoding. 'block' throws errors 
 # depending on the service as does the '/' for street intersections
+
 
 # How many rows contain an address with the format '/'?
 sum(grepl("/", crime_lou$block_address))/nrow(crime_lou) # so 15.9% of data has 
                                                          # and address of this form
+
 # How many contain 'block"? The rest?
 sum(grepl("block", crime_lou$block_address))/ nrow(crime_lou) #78.5%
 
@@ -81,39 +85,71 @@ no_block_address <- crime_lou%>%
 # These seem to be general 'zone' listings. Testing them out, some are geocodable,
 # some are not ???
 
-#After cleaning this would still yield ~35000 addresses to code. What if we get 
+
+
+
+
+#After cleaning this would still yield ~34000 addresses to code. What if we get 
 # rid of rows with 'other' nibrs codes ('000' and '999'). There is nothing immediately
 # obvious I can do about those
 
 crime_lou <- crime_raw %>%
   filter(!(nibrs_code == "000" | nibrs_code == "999"), zip_code %in% lou_zip == TRUE,
-         city %in% lou_city == TRUE)
+         city %in% lou_city == TRUE, !is.na(date_occured), !is.na(date_reported))
+
+
+
+# Perhaps if we narrow the time frame we can cut down the number again
+# Create a year_reported/year_occured(why the huge difference sometimes?)
+# month_reported/month_occured column for easy filtering
+
+#Filter any missing dates first
+library(lubridate)
+crime_lou <- crime_lou %>%
+  mutate(year_occured = year(crime_lou$date_occured), 
+         year_reported = year(crime_lou$date_reported),
+         month_occured = month(crime_lou$date_occured, label = TRUE), 
+         month_reported = month(crime_lou$date_reported, label = TRUE))
 
 # Now if we look unique addresses
-block_address <- crime_lou%>%
+length(unique(crime_lou$block_address)) # 34024
+
+#removing general addresses that will be difficult to geocode
+to_geocode_df <- crime_lou%>%
   filter(grepl("/", crime_lou$block_address) == TRUE | grepl("block", crime_lou$block_address) == TRUE)
 
+length(unique(to_geocode_df$block_address)) #32934
+
+# Clean this data frame to be more interpretable to all geocoding services
+to_geocode_df <- to_geocode_df%>%
+  mutate(street_address = gsub("block | /.+", "", block_address))
+
+length(unique(to_geocode_df$street_address)) #25051
+
+# Create full address column
+to_geocode_df <- to_geocode_df%>%
+  mutate(full_address = paste(street_address, city, "KY", zip_code, sep = ", "))
+
+length(unique(to_geocode_df$full_address)) #Shoots back up to 35624
 
 
+# Why does this number shoot up so much? Let's take a look real quick
+to_geocode_df %>%
+  filter(street_address == "bishop ln")
+# Aha! Our various spellings of louisvlle did us in for one
+# Let's go back and fix all those to one, correct spelling
+to_geocode_df <- to_geocode_df%>%
+  mutate(full_address = paste(street_address, "Louisville, KY", zip_code, sep = ", "))
 
-#How many incidents by zip code regardless of date
-by_zip <- crime_raw %>%
-  filter( !(zip_code == "" | zip_code == "`"))%>%
-  group_by(zip_code)%>%
-  summarise(total = n())%>%
-  arrange(desc(total))
-            
-#mapping this crime data using ggmap
-library(ggmap)
-louisville <- get_map(location = c(lon = -85.6767705, lat = 38.188805),
-                      maptype = "roadmap",
-                      source = "google")
-crime_map <- ggmap(louisville,
-      extent = "device",
-      ylab = "Latitude",
-      xlab = "Longitude") +
-  geom_point(data = by_zip, )
+length(unique(to_geocode_df$full_address)) # 26072
 
+# Filtering rows with '@#()-/.' in addresses.  Only google seems to pick those up
+# during geocoding
+to_geocode_df <- to_geocode_df %>%
+  filter(grepl("-|#|@|/|\\.|\\(|\\)", to_geocode_df$street_address) == FALSE)
 
-
+# Writing this list of unique addresses to csv for easy access and geocoding
+unique_addresses <- data.frame(unique(to_geocode_df$full_address))
+names(unique_addresses) <- "addresses"
+write.csv(unique_addresses, "unique_addresses.csv")
 
