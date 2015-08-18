@@ -85,3 +85,7 @@ lou_clean$zip_code <- as.factor(lou_clean$zip_code)
 # clarify these lat/lng are for zip code, not specific street address
 names(lou_clean)[names(lou_clean) == "lat"] <- "lat_zip_code"
 names(lou_clean)[names(lou_clean) == "lng"] <- "lng_zip_code"
+
+
+# write this data frame to csv for easy access
+write.csv(lou_clean, "clean_louisville_crime.csv", row.names = FALSE)
