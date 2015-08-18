@@ -151,8 +151,8 @@ to_geocode_df <- to_geocode_df %>%
 # Writing this list of unique addresses to csv for easy access and geocoding
 unique_addresses <- data.frame(unique(to_geocode_df$full_address))
 names(unique_addresses) <- "addresses"
-write.csv(unique_addresses, "unique_addresses.csv")
+write.csv(unique_addresses, "unique_addresses.csv", row.names = FALSE)
 
 #Writing the cleaned up full data frame to csv as well
-write.csv(to_geocode_df, "clean_louisville_crime.csv")
+write.csv(to_geocode_df, "clean_louisville_crime.csv", row.names = FALSE)
 
