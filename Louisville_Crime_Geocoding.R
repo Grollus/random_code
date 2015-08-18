@@ -6,7 +6,7 @@ addresses <- fread("unique_addresses.csv", data.table = FALSE)
 lou_clean <- fread("clean_louisville_crime.csv", data.table = FALSE)
 
 #-----------------------------------------------------------------------------------
-# Geocoding by zip code
+# Basic Google geocoding function
 zip_codes <-  lou_clean %>%
   select(zip_code) %>%
   distinct(zip_code)
@@ -71,3 +71,17 @@ for(i in seq(startindex, nrow(zip_codes))){
   # save temporary results as we go
   saveRDS(geocoded, tempfilename)
 }
+
+
+
+#----------------------------------------------------------------------------------
+# adding lat/lng data to clean louisville data frame
+lou_clean <- left_join(lou_clean, geocoded[, 1:3],
+                            by = c("zip_code" = "supplied_address"))
+
+# making zip_code factor again
+lou_clean$zip_code <- as.factor(lou_clean$zip_code)
+
+# clarify these lat/lng are for zip code, not specific street address
+names(lou_clean)[names(lou_clean) == "lat"] <- "lat_zip_code"
+names(lou_clean)[names(lou_clean) == "lng"] <- "lng_zip_code"
