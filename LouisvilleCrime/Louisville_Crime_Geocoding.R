@@ -2,6 +2,8 @@
 library(data.table)
 library(dplyr)
 library(ggmap)
+# Set wd to LouisvilleCrime folder
+setwd("D:/RProgram/random_code/LouisvilleCrime")
 addresses <- fread("unique_addresses.csv", data.table = FALSE)
 lou_clean <- fread("clean_louisville_crime.csv", data.table = FALSE)
 
@@ -86,6 +88,18 @@ lou_clean$zip_code <- as.factor(lou_clean$zip_code)
 names(lou_clean)[names(lou_clean) == "lat"] <- "lat_zip_code"
 names(lou_clean)[names(lou_clean) == "lng"] <- "lng_zip_code"
 
+#----------------------------------------------------------------------------------
+# Adding column for hour crime occured
+library(lubridate)
+lou_clean$hour_occured <- round(hour(lou_clean$date_occured) + minute(lou_clean$date_occured)/60, 0)
+# Adding day of week column
+lou_clean$weekday <- wday(lou_clean$date_occured, label = TRUE, abbr = FALSE)
 
-# write this data frame to csv for easy access
+# write full data frame to csv for easy access
 write.csv(lou_clean, "clean_louisville_crime.csv", row.names = FALSE)
+
+# writing partial dataframe for shiny app
+lou_shiny <- lou_clean%>%
+  select(date_occured, crime_type, premise_type, zip_code, year_occured, month_occured,
+         lat_zip_code, lng_zip_code, hour_occured, nibrs_code, weekday)
+write.csv(lou_shiny, "lou_shiny_data.csv", row.names = FALSE)
