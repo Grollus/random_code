@@ -1,4 +1,4 @@
-library(ggvis)
+library(ggplot2)
 
 shinyUI(fluidPage(
   titlePanel("Louisville Crime Mapping"),
@@ -43,11 +43,10 @@ shinyUI(fluidPage(
                                       "school - elementary / secondary", "service / gas station",
                                       "specialty store (tv, fur, etc)", "tribal lands"))
             )),
-    column(9,
-           ggvisOutput("plot1"),
-           wellPanel(
-             span("Number of Crimes Displayed:",
-                  textOutput("n_crimes"))
-           ))
+    mainPanel(
+      plotOutput("map", width = "750px", "750px"),
+      sliderInput("zoom", label = h3("Zoom"),
+                  min = 9, max = 18, value = 11)
+    )
   )
 ))
