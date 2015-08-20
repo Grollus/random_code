@@ -1,3 +1,4 @@
+# http://api.louisvilleky.gov/api/File/DownloadFile?fileName=Crime_Data_All.zip
 unzip("Crime_Data_All.zip")
 unzip("AssaultedOfficerData.zip")
 #Reading data in
