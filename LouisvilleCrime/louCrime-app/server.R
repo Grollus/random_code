@@ -33,9 +33,33 @@ shinyServer(function(input, output){
   # Plotting Louisville crime map
   output$map <- renderPlot({
     
-    getMap <- get_map("louisville", zoom = input$zoom, maptype = "roadmap",
-                      color = "bw")
-    ggmap(getMap, extent = "panel")
+    # Static map implementation (aside from zoom)  
+    # TODO add reactivity to map parameters
+    baseMap <- get_map("louisville",
+                       zoom = input$zoom, # 10 is default city view. 11 seems better 
+                       maptype = "roadmap",
+                      color = "bw",
+                      scale = 2) # high res image significantly clearer
+    
+    # add Cartesian coordinates to enable more geoms
+    baseMap <- ggmap(baseMap, extent = "panel") + coord_cartesian() 
+    
+    
+    # Main ggplot object
+    mapFinal <- baseMap +
+      
+      # Trying it out with points initially
+      # I think density plots may be better
+      geom_point(aes(x = lng_zip_code,
+                     y = lat_zip_code,
+                     fill = ..level.., # Not sure about this argument in geom_point
+                     alpha = ..level..),
+                 size = 
+
+                     ))
+    
+    # 
+    
   })
 
   
