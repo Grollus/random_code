@@ -8,30 +8,39 @@ addresses <- fread("unique_addresses.csv", data.table = FALSE)
 lou_clean <- fread("clean_louisville_crime.csv", data.table = FALSE)
 
 #-----------------------------------------------------------------------------------
-# Basic Google geocoding function
-zip_codes <-  lou_clean %>%
-  select(zip_code) %>%
-  distinct(zip_code)
+# Basic geocoding function
+# This would timeout every so often and I had to manually restart
+# A full fledged implementation of the geocoding function needs to address this
+# TODO: Address timeout error in geocode function.
+    # Perhaps check for the error and if present, restart the function?
+  # zip_codes <-  lou_clean %>%
+  #   select(zip_code) %>%
+  #   distinct(zip_code)
+# Geocoding full addresses now with dsk api
+  # 2.52 ggmap allows use of dsk instead of google maps api
+full_addresses <- lou_clean %>%
+  select(full_address) %>%
+  distinct(full_address)
 
 
 geocodeResults <- function(address){
-  # query google map api
+  # query using dsk api: should be no limit
   geocode_reply <- geocode(address, output = "all", messaging = TRUE,
-                           override_limit = TRUE)
+                           override_limit = TRUE, source = "dsk")
   
   # extracting information we want
   answer <- data.frame(supplied_address = address, lat = NA, lng = NA, 
                          returned_address = NA, status = NA)
   answer$status <- geocode_reply$status
   
-  
+  # For google API use only
   # pausing while we are over query limit
   while(geocode_reply$status == "OVER_QUERY_LMIT"){
     print("OVER QUERY LIMIT -pausing for 1 hour at:")
     print(as.character(Sys.time()))
     Sys.sleep(60*60)
     geocode_reply <- geocode(address, output = "all", messaging = TRUE,
-                             override_limit = TRUE)
+                             override_limit = TRUE, source = "dsk")
     answer$status <- geocode_reply$status
   }
   
@@ -50,36 +59,35 @@ geocodeResults <- function(address){
 }
 
 # initializing the data frame for the results
-geocoded <- data.frame()
-# looking for existing temp file. if it exists find where it left off and start
-# from there
-startindex <- 1
-tempfilename <- paste0("input", "_temp_geocoded.rds")
-if(file.exists(tempfilename)){
-  print("Found file - resuming from index:")
-  geocoded <- readRDS(tempfilename)
-  startindex <- nrow(geocoded)
-  print(startindex)
-}
+  geocoded <- data.frame()
+  # looking for existing temp file. if it exists find where it left off and start
+  # from there
+  startindex <- 1
+  tempfilename <- paste0("input", "_temp_geocoded.rds")
+  if(file.exists(tempfilename)){
+    print("Found file - resuming from index:")
+    geocoded <- readRDS(tempfilename)
+    startindex <- nrow(geocoded)
+    print(startindex)
+  }
 
-for(i in seq(startindex, nrow(zip_codes))){
-  print(paste("Working on index", i, "of", nrow(zip_codes)))
-  # query geocoder
-  result <- geocodeResults(zip_codes[i,])
-  print(result$status)
-  result$index <- i
-  # append the answer to the results file
-  geocoded <- rbind(geocoded, result)
-  # save temporary results as we go
-  saveRDS(geocoded, tempfilename)
-}
-
-
-
+  for(i in seq(startindex, nrow(full_addresses))){
+    print(paste("Working on index", i, "of", nrow(full_addresses)))
+    # query geocoder
+    result <- geocodeResults(full_addresses[i,])
+    print(result$status)
+    result$index <- i
+    # append the answer to the results file
+    geocoded <- rbind(geocoded, result)
+    # save temporary results as we go
+    saveRDS(geocoded, tempfilename)
+  }
 #----------------------------------------------------------------------------------
+
+  
 # adding lat/lng data to clean louisville data frame
 lou_clean <- left_join(lou_clean, geocoded[, 1:3],
-                            by = c("zip_code" = "supplied_address"))
+                            by = c("full_address" = "supplied_address"))
 
 # making zip_code factor again
 lou_clean$zip_code <- as.factor(lou_clean$zip_code)
@@ -101,5 +109,5 @@ write.csv(lou_clean, "clean_louisville_crime.csv", row.names = FALSE)
 # writing partial dataframe for shiny app
 lou_shiny <- lou_clean%>%
   select(date_occured, crime_type, premise_type, zip_code, year_occured, month_occured,
-         lat_zip_code, lng_zip_code, hour_occured, nibrs_code, weekday)
+         lat_zip_code, lng_zip_code, hour_occured, nibrs_code, weekday, lat, lng, full_address)
 write.csv(lou_shiny, "lou_shiny_data.csv", row.names = FALSE)

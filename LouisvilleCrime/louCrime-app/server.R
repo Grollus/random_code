@@ -19,16 +19,8 @@ louCrime <- fread('lou_shiny_data.csv', stringsAsFactors = FALSE, data.table = F
 # louCrime$nibrs_code <- factor(louCrime$nibrs_code)
 # louCrime$weekday <- factor(louCrime$weekday)
 
-# Grab louisville map from google api
-lou_map <- get_map(location = "louisville", zoom = 11, color = "bw",
-                   maptype = "roadmap", source = "google")
-
-
 shinyServer(function(input, output){
-  
-  
-  
-  
+
   
   # Plotting Louisville crime map
   output$map <- renderPlot({
@@ -50,15 +42,14 @@ shinyServer(function(input, output){
       
       # Trying it out with points initially
       # I think density plots may be better
-      geom_point(aes(x = lng_zip_code,
+      stat_density2d(aes(x = lng_zip_code,
                      y = lat_zip_code,
                      fill = ..level.., # Not sure about this argument in geom_point
                      alpha = ..level..),
-                 size = 
-
-                     ))
+                     data = louCrime)
     
-    # 
+    print(mapFinal)
+
     
   })
 
