@@ -1,52 +1,69 @@
-library(data.table)
+# library(data.table)
 library(dplyr)
 library(ggplot2)
 library(ggmap)
-# I think I need to set the working directory here
-setwd("D:/RProgram/random_code/LouisvilleCrime")
 
 # Read data in from csv
 # louCrime <- fread('lou_shiny_data.csv', stringsAsFactors = FALSE, data.table = FALSE)
-louCrime <- readRDS("test_lou.rds")
-# # reformat this for correct classes
-# louCrime$date_occured <- as.POSIXct(louCrime$date_occured)
-# louCrime$crime_type <- factor(louCrime$crime_type)
-# louCrime$premise_type <- factor(louCrime$premise_type)
-# louCrime$zip_code <- factor(louCrime$zip_code)
-# louCrime$year_occured <- factor(louCrime$year_occured)
-# louCrime$month_occured <- factor(louCrime$month_occured)
-# louCrime$hour_occured <- factor(louCrime$hour_occured, ordered = ordered(louCrime$hour_occured))
-# louCrime$nibrs_code <- factor(louCrime$nibrs_code)
-# louCrime$weekday <- factor(louCrime$weekday)
+louCrime <- readRDS("C:/RProgram/random_code/LouisvilleCrime/louCrime-app/Data/lou_shiny_data.rds")
+louCrime <- as.data.frame(louCrime)
 
 shinyServer(function(input, output){
-
+  
+  
+  # Filtering Crime Data, return data frame
+  crime <- reactive({
+    # Temporary variables due to dplyr issue #318
+    minYear <- input$year[1]
+    maxYear <- input$year[2]
+    # Month <- input$month
+    # Weekday <- input$weekday
+    # Premise <- input$premise
+    # Crime <- input$crime
+    
+    # Apply filters
+    c <- louCrime %>%
+      filter(
+        year_occured >= minYear,
+        year_occured <= maxYear
+      )
+      
+    # Optional: filter by crime type
+    if(input$crime != "all"){
+      c <- c %>% filter(crime_type == input$crime)
+    }
+    
+    c <- as.data.frame(c)
+    c
+  })
+  
   
   # Plotting Louisville crime map
   output$map <- renderPlot({
     
     # Static map implementation (aside from zoom)  
     # TODO add reactivity to map parameters
-    baseMap <- get_map(location = c(-85.682264, 38.211468), source = "osm",
+    baseMap <- reactive({get_map(location = "louisville", source = "google",
                        zoom = input$zoom, # 10 is default city view. 11 seems better 
-                       maptype = "roadmap"
-                      #color = "bw",
-                     # scale = 2) # high res image significantly clearer
-    )
+                       maptype = "roadmap",
+                       color = "bw",
+                       scale = 2) # high res image significantly clearer
+    })
     # add Cartesian coordinates to enable more geoms
-    baseMap <- ggmap(baseMap, extent = "panel") + coord_cartesian() 
+    BM <- baseMap()
+    baseMap <- ggmap(BM, extent = "panel") + coord_cartesian() 
     
-    
+    # subCrime <- crime()
     # Main ggplot object
     mapFinal <- baseMap +
       
       # Trying it out with points initially
       # I think density plots may be better
-      stat_density2d(aes(x = lng,
+      stat_density2d(data = crime(), aes(x = lng,
                      y = lat,
                      fill = ..level.., # Not sure about this argument in geom_point
                      alpha = ..level..),
-                     data = louCrime)
+                     geom = "polygon")
     
     print(mapFinal)
 
