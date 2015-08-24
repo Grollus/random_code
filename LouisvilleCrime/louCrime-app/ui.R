@@ -7,7 +7,7 @@ shinyUI(fluidPage(
            wellPanel(
              h4("Filter"),
              sliderInput("year", "Display Years",
-                         min = 1920, max = 2015, value = c(2000, 2015), step = 1),
+                         min = 1920, max = 2015, value = c(2014, 2015), step = 1),
              selectInput("month", "Display Months", 
                          choices = c("All", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")), # TODO expand to seasons. Need basic functionality first
@@ -19,9 +19,10 @@ shinyUI(fluidPage(
                                             "disturbing the peace", "drugs/alcohol violations",
                                             "dui", "fraud", "homicide", "motor vehicle theft",
                                             "other", "robbery", "sex crimes", "theft/larceny",
-                                            "vandalism", "vehicle break-in/theft", "weapons")),
+                                            "vandalism", "vehicle break-in/theft", "weapons"),
+                                selected = "all"),
              selectInput("premise", "Crime Premise Type",
-                         choices  = c("", "abandoned/condemned structure", "air / bus / train terminal",
+                         choices  = c("all", "abandoned/condemned structure", "air / bus / train terminal",
                                       "amusement park", "atm separate from bank", "attached residential garage",
                                       "auto dealership (new or used)", "bank / savings & loan",
                                       "bar / night club", "camp / campground",
