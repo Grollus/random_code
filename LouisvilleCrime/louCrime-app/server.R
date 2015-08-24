@@ -6,8 +6,8 @@ library(ggmap)
 setwd("D:/RProgram/random_code/LouisvilleCrime")
 
 # Read data in from csv
-louCrime <- fread('lou_shiny_data.csv', stringsAsFactors = FALSE, data.table = FALSE)
-
+# louCrime <- fread('lou_shiny_data.csv', stringsAsFactors = FALSE, data.table = FALSE)
+louCrime <- readRDS("test_lou.rds")
 # # reformat this for correct classes
 # louCrime$date_occured <- as.POSIXct(louCrime$date_occured)
 # louCrime$crime_type <- factor(louCrime$crime_type)
@@ -27,12 +27,12 @@ shinyServer(function(input, output){
     
     # Static map implementation (aside from zoom)  
     # TODO add reactivity to map parameters
-    baseMap <- get_map("louisville",
+    baseMap <- get_map(location = c(-85.682264, 38.211468), source = "osm",
                        zoom = input$zoom, # 10 is default city view. 11 seems better 
-                       maptype = "roadmap",
-                      color = "bw",
-                      scale = 2) # high res image significantly clearer
-    
+                       maptype = "roadmap"
+                      #color = "bw",
+                     # scale = 2) # high res image significantly clearer
+    )
     # add Cartesian coordinates to enable more geoms
     baseMap <- ggmap(baseMap, extent = "panel") + coord_cartesian() 
     
@@ -42,8 +42,8 @@ shinyServer(function(input, output){
       
       # Trying it out with points initially
       # I think density plots may be better
-      stat_density2d(aes(x = lng_zip_code,
-                     y = lat_zip_code,
+      stat_density2d(aes(x = lng,
+                     y = lat,
                      fill = ..level.., # Not sure about this argument in geom_point
                      alpha = ..level..),
                      data = louCrime)
