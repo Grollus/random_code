@@ -5,7 +5,7 @@ library(ggmap)
 
 # Read data in from csv
 # louCrime <- fread('lou_shiny_data.csv', stringsAsFactors = FALSE, data.table = FALSE)
-louCrime <- readRDS("C:/RProgram/random_code/LouisvilleCrime/louCrime-app/Data/lou_shiny_data.rds")
+louCrime <- readRDS("Data/lou_shiny_data.rds")
 louCrime <- as.data.frame(louCrime)
 
 shinyServer(function(input, output){
@@ -16,10 +16,6 @@ shinyServer(function(input, output){
     # Temporary variables due to dplyr issue #318
     minYear <- input$year[1]
     maxYear <- input$year[2]
-    # Month <- input$month
-    # Weekday <- input$weekday
-    # Premise <- input$premise
-    # Crime <- input$crime
     
     # Apply filters
     c <- louCrime %>%
@@ -33,6 +29,20 @@ shinyServer(function(input, output){
       c <- c %>% filter(crime_type == input$crime)
     }
     
+    # Optional: filter by month
+    if(input$month != "All"){
+      c <- c %>% filter(month_occured == input$month)
+    }
+    
+    # Optional: filter by weekday
+    if(input$weekday != "All"){
+      c <- c %>% filter(weekday == input$weekday)
+    }
+    
+    # Optional: filter by premise type
+    if(input$premise != "all"){
+      c <- c %>% filter(premise_type == input$premise)
+    }
     c <- as.data.frame(c)
     c
   })
@@ -43,19 +53,21 @@ shinyServer(function(input, output){
     
     # Static map implementation (aside from zoom)  
     # TODO add reactivity to map parameters
-    baseMap <- reactive({get_map(location = "louisville", source = "google",
+    baseMap <- reactive({
+      BM <- get_map(location = "louisville", source = "google",
                        zoom = input$zoom, # 10 is default city view. 11 seems better 
                        maptype = "roadmap",
                        color = "bw",
                        scale = 2) # high res image significantly clearer
+      BM
     })
     # add Cartesian coordinates to enable more geoms
-    BM <- baseMap()
-    baseMap <- ggmap(BM, extent = "panel") + coord_cartesian() 
+    
+    bMap <- ggmap(baseMap(), extent = "panel") + coord_cartesian() 
     
     # subCrime <- crime()
     # Main ggplot object
-    mapFinal <- baseMap +
+    mapFinal <- bMap +
       
       # Trying it out with points initially
       # I think density plots may be better
