@@ -7,7 +7,7 @@ shinyUI(fluidPage(
            wellPanel(
              h4("Filter"),
              textInput("location", "Enter a place of interest:", "Louisville"),
-             helpText("Examples: 40211, Shively, Jeffersontown, etc."),
+             helpText("Examples: 40211, Shively, 	101 E Main St, etc."),
              sliderInput("year", "Display Years",
                          min = 1920, max = 2015, value = c(2014, 2015), step = 1),
              selectInput("month", "Display Months", 
@@ -23,7 +23,7 @@ shinyUI(fluidPage(
                                             "other", "robbery", "sex crimes", "theft/larceny",
                                             "vandalism", "vehicle break-in/theft", "weapons"),
                                 selected = "all"),
-             selectInput("premise", "Crime Premise Type",
+             selectInput("premise", "Crime Premise Type", multiple = TRUE,
                          choices  = c("all", "abandoned/condemned structure", "air / bus / train terminal",
                                       "amusement park", "atm separate from bank", "attached residential garage",
                                       "auto dealership (new or used)", "bank / savings & loan",
@@ -52,28 +52,28 @@ shinyUI(fluidPage(
       hr() 
     )),
   fluidRow(
-      column(4,
-             sliderInput("zoom", label = "Zoom",
-                         min = 9, max = 18, value = 10),     
-             # Settings for density plot
-             sliderInput("alpharange", "Alpha Range:", 
-                         min = 0, max = 1, step = 0.1, value = c(0.1, 0.4))
-      ),
-      column(4,
-             sliderInput("bins", "Number of Bins:",
-                         min = 5, max = 50, step = 5, value = 15),
-             sliderInput("boundwidth", "BoundaryLines Width:",
-                         min = 0, max = 1, step = 0.1, value = 0.1)
-      ),
-      column(4,
-             selectInput("low", "Fill Gradient (Low):",
-                         choices = c("yellow", "red", "orange", "black", "white", "blue",
-                                     "green", "purple")),
-             br(),
-             br(),
-             selectInput("high", "Fill Gradient (High):",
-                         choices = c("red", "orange", "black", "white", "blue", "green",
-                                     "purple", "yellow"))
-            )
+    column(4,
+           sliderInput("zoom", label = "Zoom",
+                       min = 9, max = 18, value = 10),     
+           # Settings for density plot
+           sliderInput("alpharange", "Alpha Range:", 
+                       min = 0, max = 1, step = 0.1, value = c(0.1, 0.4))
+    ),
+    column(4,
+           sliderInput("bins", "Number of Bins:",
+                       min = 5, max = 50, step = 5, value = 15),
+           sliderInput("boundwidth", "BoundaryLines Width:",
+                       min = 0, max = 1, step = 0.1, value = 0.1)
+    ),
+    column(4,
+           selectInput("low", "Fill Gradient (Low):",
+                       choices = c("yellow", "red", "orange", "black", "white", "blue",
+                                   "green", "purple")),
+           br(),
+           br(),
+           selectInput("high", "Fill Gradient (High):",
+                       choices = c("red", "orange", "black", "white", "blue", "green",
+                                   "purple", "yellow"))
     )
+  )
 ))

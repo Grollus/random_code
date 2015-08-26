@@ -43,9 +43,8 @@ shinyServer(function(input, output){
     }
     
     # Optional: filter by premise type
-    if(input$premise != "all"){
-      c <- c %>% filter(premise_type == input$premise)
-    }
+    ifelse(input$premise != "all", c <- c %>% filter(premise_type %in% input$premise), c)
+    
     c <- as.data.frame(c)
     c
   })
