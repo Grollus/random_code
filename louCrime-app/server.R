@@ -10,24 +10,27 @@ louCrime <- as.data.frame(louCrime)
 
 shinyServer(function(input, output){
   
-  
+  # Geocode input location for base maps
+  bMap_geocode <- reactive({
+    data.frame(geocode = geocode(paste(input$location, "Louisville, KY"), source = "google"))
+    
+  })
   # Filtering Crime Data, return data frame
   crime <- reactive({
-    # Temporary variables due to dplyr issue #318
-    minYear <- input$year[1]
-    maxYear <- input$year[2]
     
     # Apply filters
     c <- louCrime %>%
       filter(
-        year_occured >= minYear,
-        year_occured <= maxYear
+        year_occured >= input$year[1],
+        year_occured <= input$year[2]
       )
-      
-    # Optional: filter by crime type
-    if(input$crime != "all"){
-      c <- c %>% filter(crime_type == input$crime)
+    # Optional: filter by zip_code
+    if(input$location != "Louisville" & input$location %in% c$zip_code){
+      c <- c %>% filter(zip_code == input$location)
     }
+    
+    # Optional: filter by crime type
+    ifelse(input$crime != "all", c <- c %>% filter(crime_type %in% input$crime), c)
     
     # Optional: filter by month
     if(input$month != "All"){
@@ -51,15 +54,17 @@ shinyServer(function(input, output){
   # Plotting Louisville crime map
   output$map <- renderPlot({
     
-    # Static map implementation (aside from zoom)  
-    # TODO add reactivity to map parameters
+    # Get base map; reactivity based on zoom input
+    temp_bMap_geocode <- bMap_geocode()
+    
     baseMap <- reactive({
-      BM <- get_map(location = "louisville", source = "google",
+      
+      base <- get_map(location = as.matrix(temp_bMap_geocode), source = "google",
                        zoom = input$zoom, # 10 is default city view. 11 seems better 
                        maptype = "roadmap",
                        color = "bw",
                        scale = 2) # high res image significantly clearer
-      BM
+      base
     })
     # add Cartesian coordinates to enable more geoms
     
@@ -75,13 +80,27 @@ shinyServer(function(input, output){
                      y = lat,
                      fill = ..level.., # Not sure about this argument in geom_point
                      alpha = ..level..),
-                     geom = "polygon")
+                     geom = "polygon",
+                     bins = input$bins,
+                     size = input$boundwidth) +
+      
+      # Configuring scale and panel
+      scale_alpha(range = input$alpharange) +
+      scale_fill_gradient(low = input$low, high = input$high) +
+      
+      # Title and labels
+      labs(x = "Longitude", y = "Latitude") + 
+      ggtitle(paste("Crimes in Louisville from ", input$year[1], " to ", 
+                    input$year[2], sep = "")) + 
+      
+      # Other plot details
+      theme_bw() +
+      theme(
+        plot.title = element_text(size = 20, face = "bold"),
+        legend.position = "none"
+      )
     
     print(mapFinal)
 
-    
   })
-
-  
-    
 })
