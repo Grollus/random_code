@@ -16,15 +16,15 @@ shinyUI(fluidPage(
              selectInput("weekday", "Day(s) of Week",
                          choices = c("All", "Sunday", "Monday", "Tuesday", "Wednesday",
                                      "Thursday", "Friday", "Saturday")),
-             checkboxGroupInput("crime", "Select crime to display",
-                                choices = c("all", "arson", "assault", "burglary",
+             selectInput("crime", "Select crime to display", multiple = TRUE,
+                                choices = c("All", "arson", "assault", "burglary",
                                             "disturbing the peace", "drugs/alcohol violations",
                                             "dui", "fraud", "homicide", "motor vehicle theft",
                                             "other", "robbery", "sex crimes", "theft/larceny",
                                             "vandalism", "vehicle break-in/theft", "weapons"),
-                                selected = "all"),
-             selectInput("premise", "Crime Premise Type", multiple = TRUE,
-                         choices  = c("all", "abandoned/condemned structure", "air / bus / train terminal",
+                                selected = "All"),
+             selectInput("premise", "Crime Premise Type", multiple = TRUE, selected = "All",
+                         choices  = c("All", "abandoned/condemned structure", "air / bus / train terminal",
                                       "amusement park", "atm separate from bank", "attached residential garage",
                                       "auto dealership (new or used)", "bank / savings & loan",
                                       "bar / night club", "camp / campground",
@@ -45,16 +45,19 @@ shinyUI(fluidPage(
                                       "rest area", "restaurant", "school - college / university",
                                       "school - elementary / secondary", "service / gas station",
                                       "specialty store (tv, fur, etc)", "tribal lands")),
-             submitButton("Filter and Plot")
+             selectInput("facet", "Facet crime by:", choice = c("no faceting", "year", "month", "weekday")),
+             tags$div(title = "Click here to replot after adjusting any input",
+                      submitButton("Filter and Plot")
+                      )
+             
             )),
   mainPanel(
-      plotOutput("map", width = "775px", "900px"),
-      hr() 
+      plotOutput("map", width = "775px", "775px")
     )),
   fluidRow(
     column(4,
            sliderInput("zoom", label = "Zoom",
-                       min = 9, max = 18, value = 10),     
+                       min = 9, max = 18, value = 11),     
            # Settings for density plot
            sliderInput("alpharange", "Alpha Range:", 
                        min = 0, max = 1, step = 0.1, value = c(0.1, 0.4))
