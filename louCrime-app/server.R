@@ -7,6 +7,13 @@ library(ggmap)
 # louCrime <- fread('lou_shiny_data.csv', stringsAsFactors = FALSE, data.table = FALSE)
 louCrime <- readRDS("Data/lou_shiny_data.rds")
 louCrime <- as.data.frame(louCrime)
+louCrime$month_occured <- factor(louCrime$month_occured, levels = c("Jan", "Feb", "Mar",
+                                                                    "Apr", "May", "Jun",
+                                                                    "Jul", "Aug", "Sep",
+                                                                    "Oct", "Nov", "Dec"))
+louCrime$weekday <- factor(louCrime$weekday, levels = c("Sunday", "Monday", "Tuesday",
+                                                        "Wednesday", "Thursday", "Friday",
+                                                        "Saturday"))
 
 shinyServer(function(input, output){
   
@@ -30,7 +37,7 @@ shinyServer(function(input, output){
     }
     
     # Optional: filter by crime type
-    ifelse(input$crime != "all", c <- c %>% filter(crime_type %in% input$crime), c)
+    ifelse(input$crime != "All", c <- c %>% filter(crime_type %in% input$crime), c)
     
     # Optional: filter by month
     if(input$month != "All"){
@@ -43,7 +50,7 @@ shinyServer(function(input, output){
     }
     
     # Optional: filter by premise type
-    ifelse(input$premise != "all", c <- c %>% filter(premise_type %in% input$premise), c)
+    ifelse(input$premise != "All", c <- c %>% filter(premise_type %in% input$premise), c)
     
     c <- as.data.frame(c)
     c
@@ -69,7 +76,6 @@ shinyServer(function(input, output){
     
     bMap <- ggmap(baseMap(), extent = "panel") + coord_cartesian() 
     
-    # subCrime <- crime()
     # Main ggplot object
     mapFinal <- bMap +
       
@@ -99,7 +105,13 @@ shinyServer(function(input, output){
         legend.position = "none"
       )
     
-    print(mapFinal)
-
+    # Faceting 
+    if(input$facet == "no faceting") {mapFinal}
+    if(input$facet == "month") {mapFinal <- mapFinal + facet_wrap(~ month_occured)}
+    if(input$facet == "year") {mapFinal <- mapFinal + facet_wrap(~ year_occured)}
+    if(input$facet == "weekday") {mapFinal <- mapFinal + facet_wrap(~ weekday)}
+    suppressWarnings(print(mapFinal))
   })
+  
+  
 })
