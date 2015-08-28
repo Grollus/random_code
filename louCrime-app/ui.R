@@ -52,12 +52,16 @@ shinyUI(fluidPage(
              
             )),
   mainPanel(
-      plotOutput("map", width = "775px", "775px")
+    tabsetPanel(
+      tabPanel("Map", plotOutput("map", width = "775px", "775px")),
+      tabPanel("Displayed Data", dataTableOutput("plotdata"))
+    )
+      
     )),
   fluidRow(
     column(4,
            sliderInput("zoom", label = "Zoom",
-                       min = 9, max = 18, value = 11),     
+                       min = 9, max = 15, value = 11),     
            # Settings for density plot
            sliderInput("alpharange", "Alpha Range:", 
                        min = 0, max = 1, step = 0.1, value = c(0.1, 0.4))

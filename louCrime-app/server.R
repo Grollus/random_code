@@ -87,7 +87,8 @@ shinyServer(function(input, output){
                      alpha = ..level..),
                      geom = "polygon",
                      bins = input$bins,
-                     size = input$boundwidth) +
+                     size = input$boundwidth,
+                     colour = "ivory") +
       
       # Configuring scale and panel
       scale_alpha(range = input$alpharange) +
@@ -112,6 +113,16 @@ shinyServer(function(input, output){
     if(input$facet == "weekday") {mapFinal <- mapFinal + facet_wrap(~ weekday)}
     suppressWarnings(print(mapFinal))
   })
+  
+  # Display of Selected Data--shows only data currently displayed in the Map Tab
+  output$plotdata <- renderDataTable({
+    
+    display_crime <- crime()
+    
+    display_crime %>%
+      select(date_occured, premise_type, full_address, uor_desc, offense = nibrs_offenses)
+    
+  }, options = list(lengthMenu = list(c(15, 30), c('15', '30')), pageLength = 15))
   
   
 })
