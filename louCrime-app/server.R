@@ -22,8 +22,31 @@ shinyServer(function(input, output){
     data.frame(geocode = geocode(paste(input$location, "Louisville, KY"), source = "google"))
     
   })
+  
+  # Create base map;
+    # @ location is reactive
+    # @ zoom is reactive
+  baseMap <- reactive({
+    
+    temp_bMap_geocode <- bMap_geocode()
+    
+    base <- get_map(location = as.matrix(temp_bMap_geocode), source = "google",
+                    zoom = input$zoom, # 10 is default city view. 11 seems better 
+                    maptype = "roadmap",
+                    color = "bw",
+                    scale = 2) # high res image significantly clearer
+    base
+  })
+  
+  
   # Filtering Crime Data, return data frame
   crime <- reactive({
+    
+    # Grab the boundaries of the base map from baseMap
+    # Use these bounds to filter data based on inclusion in map frame
+    temp_map <- isolate(baseMap())
+    bounds <- attr(temp_map, "bb")
+    
     
     # Apply filters
     c <- louCrime %>%
@@ -31,9 +54,24 @@ shinyServer(function(input, output){
         year_occured >= input$year[1],
         year_occured <= input$year[2]
       )
-    # Optional: filter by zip_code
-    if(input$location != "Louisville" & input$location %in% c$zip_code){
+    # Currently, default will show all the data with 'Louisville' coords as map center
+    # If any other location is entered, the map will center at entered location
+    #   and any data that wouldn't fit in frame is filtered out.
+    #   Zooming will also filter out data as it is displaced by the map edges.
+    
+    # Zip code filtering below was removed for the time being.  This filtered to data only
+    #   in the desired zip code, while centering the map at the zipcode.
+    #else if (input$location %in% c$zip_code){
+    # c <- c %>% filter(zip_code == input$location)
+    if(input$location == "Louisville" & input$zoom == 11){
+      c
+    }else if(input$location %in% c$zip_code){
       c <- c %>% filter(zip_code == input$location)
+    }else{
+      c <- c %>% filter(lat >= bounds$ll.lat &
+                        lat <= bounds$ur.lat &
+                        lng >= bounds$ll.lon &
+                        lng <= bounds$ur.lon)
     }
     
     # Optional: filter by crime type
@@ -60,18 +98,8 @@ shinyServer(function(input, output){
   # Plotting Louisville crime map
   output$map <- renderPlot({
     
-    # Get base map; reactivity based on zoom input
-    temp_bMap_geocode <- bMap_geocode()
     
-    baseMap <- reactive({
-      
-      base <- get_map(location = as.matrix(temp_bMap_geocode), source = "google",
-                       zoom = input$zoom, # 10 is default city view. 11 seems better 
-                       maptype = "roadmap",
-                       color = "bw",
-                       scale = 2) # high res image significantly clearer
-      base
-    })
+    
     # add Cartesian coordinates to enable more geoms
     
     bMap <- ggmap(baseMap(), extent = "panel") + coord_cartesian() 
@@ -79,8 +107,9 @@ shinyServer(function(input, output){
     # Main ggplot object
     mapFinal <- bMap +
       
-      # Trying it out with points initially
-      # I think density plots may be better
+      # Default setting is a density estimation polot
+      # This seems to break when zoomed in too far
+      # So will adjust to point plotting when zoomed in to the max.
       stat_density2d(data = crime(), aes(x = lng,
                      y = lat,
                      fill = ..level.., # Not sure about this argument in geom_point
@@ -96,7 +125,7 @@ shinyServer(function(input, output){
       
       # Title and labels
       labs(x = "Longitude", y = "Latitude") + 
-      ggtitle(paste("Crimes in Louisville from ", input$year[1], " to ", 
+      ggtitle(paste(nrow(crime()), " crimes displayed over the period from ", input$year[1], " to ", 
                     input$year[2], sep = "")) + 
       
       # Other plot details
