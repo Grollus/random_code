@@ -2,7 +2,8 @@
 library(dplyr)
 library(ggplot2)
 library(ggmap)
-
+library(grid)
+library(RColorBrewer)
 # Read data in from csv
 # louCrime <- fread('lou_shiny_data.csv', stringsAsFactors = FALSE, data.table = FALSE)
 louCrime <- readRDS("Data/lou_shiny_data.rds")
@@ -105,6 +106,35 @@ shinyServer(function(input, output){
     bMap <- ggmap(baseMap(), extent = "panel") + coord_cartesian() 
     
     # Main ggplot object
+    if(input$zoom == 15){
+      colorCount <- length(unique(crime()$crime_type))
+      
+      mapFinal <- bMap +
+        geom_point(data = crime(), aes(x = lng, y = lat,
+                                       color = crime_type,
+                                       size = full_address, 
+                                       alpha = .4
+                   )) +
+        guides(alpha = FALSE, color = guide_legend(override.aes = list(size = 4))) + 
+        scale_color_manual(labels = c("Assault", "Burglary", "DTP", "D/A", 
+                                      "DUI", "Fraud", "Homicide", "MVT", "Other", 
+                                      "Robbery", "Sex Crimes", "Theft", "Vandalism",
+                                      "Vehicle Break In", "Weapon"), 
+                           values = colorRampPalette(brewer.pal(12, "Spectral"))(colorCount)) + 
+        scale_size_discrete(guide = FALSE, range = c(0, 20)) +
+        labs(x = "Longitude", y = "Latitude") +
+        ggtitle(paste(nrow(crime()), " crimes displayed over the period from ", input$year[1], " to ",
+                      input$year[2], sep = "")) +
+        theme_bw() +
+        theme(
+          plot.title = element_text(size = 20, face = "bold"),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 8),
+          legend.position = "bottom"
+        )
+    }else {
+    
     mapFinal <- bMap +
       
       # Default setting is a density estimation polot
@@ -134,7 +164,7 @@ shinyServer(function(input, output){
         plot.title = element_text(size = 20, face = "bold"),
         legend.position = "none"
       )
-    
+    }
     # Faceting 
     if(input$facet == "no faceting") {mapFinal}
     if(input$facet == "month") {mapFinal <- mapFinal + facet_wrap(~ month_occured)}
