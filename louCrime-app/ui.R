@@ -54,7 +54,8 @@ shinyUI(fluidPage(
   mainPanel(
     tabsetPanel(
       tabPanel("Map", plotOutput("map", width = "775px", "775px")),
-      tabPanel("Displayed Data", dataTableOutput("plotdata"))
+      tabPanel("Displayed Data", dataTableOutput("plotdata")),
+      tabPanel("Analysis", plotOutput("analysis", "775px", "775px"))
     )
       
     )),
@@ -62,25 +63,35 @@ shinyUI(fluidPage(
     column(4,
            sliderInput("zoom", label = "Zoom",
                        min = 9, max = 15, value = 11),     
-           # Settings for density plot
-           sliderInput("alpharange", "Alpha Range:", 
-                       min = 0, max = 1, step = 0.1, value = c(0.1, 0.4))
+           conditionalPanel(
+             condition = "input.zoom < 15",
+             # Settings for density plot
+             sliderInput("alpharange", "Alpha Range:", 
+                         min = 0, max = 1, step = 0.1, value = c(0.1, 0.4)))
+           
     ),
     column(4,
-           sliderInput("bins", "Number of Bins:",
-                       min = 5, max = 50, step = 5, value = 15),
-           sliderInput("boundwidth", "BoundaryLines Width:",
-                       min = 0, max = 1, step = 0.1, value = 0.1)
+           conditionalPanel(
+             condition = "input.zoom < 15",
+             sliderInput("bins", "Number of Bins:", 
+                         min = 5, max = 50, step = 5, value = 15),
+             sliderInput("boundwidth", "BoundaryLines Width:",
+                         min = 0, max = 1, step = 0.1, value = 0.1))
+           
     ),
     column(4,
-           selectInput("low", "Fill Gradient (Low):",
-                       choices = c("yellow", "red", "orange", "black", "white", "blue",
-                                   "green", "purple")),
-           br(),
-           br(),
-           selectInput("high", "Fill Gradient (High):",
-                       choices = c("red", "orange", "black", "white", "blue", "green",
-                                   "purple", "yellow"))
-    )
+           conditionalPanel(
+             condition = "input.zoom < 15",
+             selectInput("low", "Fill Gradient (Low):",
+                         choices = c("yellow", "red", "orange", "black", "white", "blue",
+                                     "green", "purple")),
+             br(),
+             br(),
+             selectInput("high", "Fill Gradient (High):",
+                         choices = c("red", "orange", "black", "white", "blue", "green",
+                                     "purple", "yellow"))
+           )
+           )
+           
   )
 ))
