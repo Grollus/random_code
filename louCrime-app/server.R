@@ -120,7 +120,7 @@ shinyServer(function(input, output){
                                       "DUI", "Fraud", "Homicide", "MVT", "Other", 
                                       "Robbery", "Sex Crimes", "Theft", "Vandalism",
                                       "Vehicle Break In", "Weapon"), 
-                           values = colorRampPalette(brewer.pal(12, "Spectral"))(colorCount)) + 
+                           values = colorRampPalette(brewer.pal(12, "Blues"))(colorCount)) + 
         scale_size_discrete(guide = FALSE, range = c(0, 20)) +
         labs(x = "Longitude", y = "Latitude") +
         ggtitle(paste(nrow(crime()), " crimes displayed over the period from ", input$year[1], " to ",
